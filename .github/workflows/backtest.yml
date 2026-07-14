@@ -1,0 +1,39 @@
+name: FVG Backtest
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        symbol: [BTC, ETH, SOL, GC, SI, ES, NQ, YM]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run backtest
+        run: |
+          python3 backtest_json.py \
+            --data backtests/data/${{ matrix.symbol }} \
+            --style swing \
+            --asset index \
+            --balance 50000 \
+            --risk aggressive \
+            --output backtests/results/${{ matrix.symbol }}_result.json
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_result
+          path: backtests/results/${{ matrix.symbol }}_result.json
+          if-no-files-found: error
