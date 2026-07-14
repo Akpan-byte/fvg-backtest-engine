@@ -1,0 +1,14 @@
+*.pyc
+__pycache__/
+*.log
+*.png
+*.jpg
+*.mp4
+.DS_Store
+.env
+results/*.json
+results/beam/*.json
+results/lightning/*.json
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
