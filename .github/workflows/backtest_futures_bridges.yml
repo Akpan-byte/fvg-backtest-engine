@@ -1,0 +1,65 @@
+name: FVG Futures Bridge Backtests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bridge-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - symbol: ES
+            bridge: 1
+            start: "2019-03-01T00:00:00"
+            end: "2019-09-01T00:00:00"
+          - symbol: ES
+            bridge: 2
+            start: "2022-09-01T00:00:00"
+            end: "2023-03-01T00:00:00"
+          - symbol: NQ
+            bridge: 1
+            start: "2019-03-01T00:00:00"
+            end: "2019-09-01T00:00:00"
+          - symbol: NQ
+            bridge: 2
+            start: "2022-09-01T00:00:00"
+            end: "2023-03-01T00:00:00"
+          - symbol: YM
+            bridge: 1
+            start: "2019-03-01T00:00:00"
+            end: "2019-09-01T00:00:00"
+          - symbol: YM
+            bridge: 2
+            start: "2022-09-01T00:00:00"
+            end: "2023-03-01T00:00:00"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run bridge backtest
+        run: |
+          python3 backtest_json.py \
+            --data backtests/data/${{ matrix.symbol }} \
+            --style swing \
+            --asset index \
+            --balance 50000 \
+            --risk aggressive \
+            --start-date "${{ matrix.start }}" \
+            --end-date "${{ matrix.end }}" \
+            --output backtests/results/${{ matrix.symbol }}_bridge${{ matrix.bridge }}_result.json
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_bridge${{ matrix.bridge }}_result
+          path: backtests/results/${{ matrix.symbol }}_bridge${{ matrix.bridge }}_result.json
+          if-no-files-found: error
