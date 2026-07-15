@@ -1,0 +1,42 @@
+name: FVG Context Variant Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  context-variant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - name: full_context
+            context_tfs: "M,W,D,H4"
+          - name: H4_only
+            context_tfs: "H4"
+          - name: D_only
+            context_tfs: "D"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install numpy
+        run: pip install numpy
+
+      - name: Run context variant
+        run: |
+          python3 backtests/test_context_variants.py "${{ matrix.name }}"
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ES_${{ matrix.name }}_2019-03-01_2019-09-01
+          path: backtests/results/context_variants/ES_${{ matrix.name }}_2019-03-01_2019-09-01.json
+          if-no-files-found: error
