@@ -260,6 +260,8 @@ def run_backtest(
     *,
     killzones: Optional[Sequence[str]] = None,
     news_events: Optional[Sequence[timefilters.NewsEvent]] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> BacktestResult:
     """Run a deterministic walk-forward backtest over timeframe CSVs in data_dir.
 
@@ -281,9 +283,27 @@ def run_backtest(
         Defaults to config.DEFAULT_ENABLED_KILLZONES.
     news_events:
         Optional explicit news events. If omitted, loaded from news.csv.
+    start_date:
+        If provided, ignore candles and trades before this datetime (inclusive).
+    end_date:
+        If provided, ignore candles and trades after this datetime (inclusive).
     """
     data_dir = Path(data_dir)
     candles_by_tf = _load_timeframe_csvs(data_dir)
+
+    # Optional date-range chunking for long-running backtests (e.g. splitting
+    # 10-year futures data into chunks that fit under CI timeouts).  Filtering
+    # here reduces the event stream size while preserving strategy fidelity
+    # inside the requested window.
+    if start_date is not None or end_date is not None:
+        for tf, candles in candles_by_tf.items():
+            candles_by_tf[tf] = [
+                c
+                for c in candles
+                if (start_date is None or c.ts >= start_date)
+                and (end_date is None or c.ts <= end_date)
+            ]
+
     initial_balance = balance
     equity_curve = [balance]
     closed_trades: list[dict] = []

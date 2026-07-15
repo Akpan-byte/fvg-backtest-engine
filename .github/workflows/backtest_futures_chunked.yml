@@ -1,0 +1,75 @@
+name: FVG Futures Backtest Chunked
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backtest-chunk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - symbol: ES
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-06-01T00:00:00"
+          - symbol: ES
+            chunk: 2
+            start: "2019-06-01T00:00:00"
+            end: "2022-12-01T00:00:00"
+          - symbol: ES
+            chunk: 3
+            start: "2022-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+          - symbol: NQ
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-06-01T00:00:00"
+          - symbol: NQ
+            chunk: 2
+            start: "2019-06-01T00:00:00"
+            end: "2022-12-01T00:00:00"
+          - symbol: NQ
+            chunk: 3
+            start: "2022-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+          - symbol: YM
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-06-01T00:00:00"
+          - symbol: YM
+            chunk: 2
+            start: "2019-06-01T00:00:00"
+            end: "2022-12-01T00:00:00"
+          - symbol: YM
+            chunk: 3
+            start: "2022-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run backtest chunk
+        run: |
+          python3 backtest_json.py \
+            --data backtests/data/${{ matrix.symbol }} \
+            --style swing \
+            --asset index \
+            --balance 50000 \
+            --risk aggressive \
+            --start-date "${{ matrix.start }}" \
+            --end-date "${{ matrix.end }}" \
+            --output backtests/results/${{ matrix.symbol }}_chunk${{ matrix.chunk }}_result.json
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_chunk${{ matrix.chunk }}_result
+          path: backtests/results/${{ matrix.symbol }}_chunk${{ matrix.chunk }}_result.json
+          if-no-files-found: error

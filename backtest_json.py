@@ -58,6 +58,20 @@ def main(argv: list[str] | None = None) -> int:
         "--risk", required=True, type=lambda s: RiskMode(s.lower()), help="passive or aggressive"
     )
     parser.add_argument("--output", required=True, help="Path to write the JSON result file.")
+    parser.add_argument(
+        "--start-date",
+        dest="start_date",
+        type=lambda s: datetime.fromisoformat(s),
+        default=None,
+        help="ISO datetime. Ignore candles/trades before this date.",
+    )
+    parser.add_argument(
+        "--end-date",
+        dest="end_date",
+        type=lambda s: datetime.fromisoformat(s),
+        default=None,
+        help="ISO datetime. Ignore candles/trades after this date.",
+    )
     args = parser.parse_args(argv)
 
     result = run_backtest(
@@ -66,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
         asset=args.asset,
         balance=args.balance,
         mode=args.risk,
+        start_date=args.start_date,
+        end_date=args.end_date,
     )
 
     payload = {
