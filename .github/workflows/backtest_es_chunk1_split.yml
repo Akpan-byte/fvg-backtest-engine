@@ -1,0 +1,51 @@
+name: FVG ES Chunk 1 Split
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backtest-chunk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - symbol: ES
+            subchunk: 1a
+            start: "2016-01-01T00:00:00"
+            end: "2017-03-01T00:00:00"
+          - symbol: ES
+            subchunk: 1b
+            start: "2017-03-01T00:00:00"
+            end: "2018-06-01T00:00:00"
+          - symbol: ES
+            subchunk: 1c
+            start: "2018-06-01T00:00:00"
+            end: "2019-06-01T00:00:00"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run backtest subchunk
+        run: |
+          python3 backtest_json.py \
+            --data backtests/data/${{ matrix.symbol }} \
+            --style swing \
+            --asset index \
+            --balance 50000 \
+            --risk aggressive \
+            --start-date "${{ matrix.start }}" \
+            --end-date "${{ matrix.end }}" \
+            --output backtests/results/${{ matrix.symbol }}_chunk1${{ matrix.subchunk }}_result.json
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_chunk1${{ matrix.subchunk }}_result
+          path: backtests/results/${{ matrix.symbol }}_chunk1${{ matrix.subchunk }}_result.json
+          if-no-files-found: error
