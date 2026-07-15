@@ -22,9 +22,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from backtest import run_backtest
 from models import AssetClass, RiskMode, TradeStyle
+
+NY = ZoneInfo("America/New_York")
+
+
+def _parse_iso_ny(text: str) -> datetime:
+    """Parse an ISO datetime and localize naive inputs to America/New_York."""
+    dt = datetime.fromisoformat(text)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=NY)
+    return dt.astimezone(NY)
 
 
 def _serialize(obj: Any) -> Any:
@@ -61,14 +72,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--start-date",
         dest="start_date",
-        type=lambda s: datetime.fromisoformat(s),
+        type=_parse_iso_ny,
         default=None,
         help="ISO datetime. Ignore candles/trades before this date.",
     )
     parser.add_argument(
         "--end-date",
         dest="end_date",
-        type=lambda s: datetime.fromisoformat(s),
+        type=_parse_iso_ny,
         default=None,
         help="ISO datetime. Ignore candles/trades after this date.",
     )
