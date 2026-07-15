@@ -1,36 +1,50 @@
-import re
 #!/usr/bin/env python3
 """Merge chunked backtest results into a single per-symbol result.
 
 Chunks are expected to be ordered by date range and non-overlapping.
-Trades, equity curve, and stats are aggregated."""
+Trades, equity curve, and stats are aggregated.
+
+Subchunk support: if chunk1a/b/c exist, they replace chunk1 so that a
+partial/failed chunk1 can be superseded by smaller successful subchunks.
+"""
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
-from typing import Any
 
 
 def _load(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def _chunk_sort_key(path: Path) -> tuple:
+    """Sort chunk files: chunk1 < chunk1a < chunk1b < chunk2 < chunk3."""
+    m = re.search(r"_chunk(\d+)([a-z]?)_result\.json$", path.name)
+    if not m:
+        return (999, "")
+    return (int(m.group(1)), m.group(2) or "_")
+
+
 def merge_symbol_chunks(result_dir: Path, symbol: str) -> dict | None:
-    chunks = sorted([x for x in result_dir.glob(f"{symbol}_chunk*_result.json") if not x.name.startswith(f"{symbol}_chunk1") or re.match(rf"^{symbol}_chunk1[a-z]?_result\.json$", x.name)])
-    if not chunks:
+    all_files = list(result_dir.glob(f"{symbol}_chunk*_result.json"))
+    if not all_files:
         return None
 
+    # If subchunks for chunk1 exist (1a, 1b, 1c), drop the parent chunk1.
+    subchunks = [p for p in all_files if re.search(r"_chunk1[a-z]_result\.json$", p.name)]
+    if subchunks:
+        all_files = [p for p in all_files if not re.search(r"_chunk1_result\.json$", p.name)]
+
+    chunks = sorted(all_files, key=_chunk_sort_key)
+
     all_trades: list[dict] = []
-    final_balance = 0.0
     meta: dict | None = None
 
     for p in chunks:
         data = _load(p)
-        trades = data.get("trades", [])
-        all_trades.extend(trades)
-        if data.get("equity_curve"):
-            final_balance = data["equity_curve"][-1]
+        all_trades.extend(data.get("trades", []))
         if meta is None:
             meta = data.get("meta", {})
 
@@ -53,7 +67,7 @@ def merge_symbol_chunks(result_dir: Path, symbol: str) -> dict | None:
 
     start_balance = meta.get("balance", 50000.0) if meta else 50000.0
     # Each chunk backtest starts from the same initial balance, so total PnL is
-    # the sum of per-chunk net profits, not final equity curve delta.
+    # the sum of per-chunk net profits.
     net_profit = sum(
         _load(p).get("stats", {}).get("net_profit", 0.0) for p in chunks
     )
