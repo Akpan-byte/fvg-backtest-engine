@@ -2,6 +2,7 @@
 """Run backtest with custom context timeframe sets for comparison."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime
@@ -16,6 +17,13 @@ from backtest import run_backtest
 from models import AssetClass, RiskMode, TradeStyle
 
 NY = __import__("zoneinfo").ZoneInfo("America/New_York")
+
+
+VARIANTS = {
+    "H4_only": ("H4",),
+    "D_only": ("D",),
+    "full_context": ("M", "W", "D", "H4"),
+}
 
 
 def _parse_iso(text: str) -> datetime:
@@ -68,35 +76,30 @@ def run_variant(
 
 
 def main() -> int:
-    symbol = "ES"
-    start = "2019-03-01T00:00:00"
-    end = "2019-09-01T00:00:00"
+    parser = argparse.ArgumentParser(description="Run context-variant backtest.")
+    parser.add_argument("variant", choices=list(VARIANTS.keys()))
+    parser.add_argument("--symbol", default="ES", help="Futures symbol (ES, NQ, YM).")
+    parser.add_argument("--start", default="2019-03-01T00:00:00", help="ISO start datetime.")
+    parser.add_argument("--end", default="2019-09-01T00:00:00", help="ISO end datetime.")
+    args = parser.parse_args()
+
     out_dir = Path(__file__).parent / "results" / "context_variants"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    variants = {
-        "H4_only": ("H4",),
-        "D_only": ("D",),
-        "full_context": ("M", "W", "D", "H4"),
-    }
+    context_tfs = VARIANTS[args.variant]
+    out_path = out_dir / f"{args.symbol}_{args.variant}_{args.start[:10]}_{args.end[:10]}.json"
+    if out_path.exists():
+        print(f"Skipping {args.variant} for {args.symbol} (already exists)")
+        return 0
 
-    # Allow running a single variant by name from CLI.
-    target = sys.argv[1] if len(sys.argv) > 1 else None
-    items = [(n, t) for n, t in variants.items() if target is None or n == target]
-
-    for name, context_tfs in items:
-        out_path = out_dir / f"{symbol}_{name}_{start[:10]}_{end[:10]}.json"
-        if out_path.exists():
-            print(f"Skipping {name} (already exists)")
-            continue
-        print(f"Running {name} with context {context_tfs}...")
-        result = run_variant(symbol, context_tfs, start, end, out_path)
-        s = result["stats"]
-        print(
-            f"  {name}: {s['trades_total']} trades, "
-            f"{s['win_rate']:.1%} win, ${s['net_profit']:,.0f} net, "
-            f"max LS {s['max_losing_streak']}"
-        )
+    print(f"Running {args.variant} for {args.symbol} with context {context_tfs}...")
+    result = run_variant(args.symbol, context_tfs, args.start, args.end, out_path)
+    s = result["stats"]
+    print(
+        f"  {args.variant}: {s['trades_total']} trades, "
+        f"{s['win_rate']:.1%} win, ${s['net_profit']:,.0f} net, "
+        f"max LS {s['max_losing_streak']}"
+    )
     return 0
 
 

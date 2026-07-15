@@ -1,0 +1,60 @@
+name: FVG Context Variant 1-Year Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  context-variant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          # ES
+          - symbol: ES
+            variant: full_context
+          - symbol: ES
+            variant: H4_only
+          - symbol: ES
+            variant: D_only
+          # NQ
+          - symbol: NQ
+            variant: full_context
+          - symbol: NQ
+            variant: H4_only
+          - symbol: NQ
+            variant: D_only
+          # YM
+          - symbol: YM
+            variant: full_context
+          - symbol: YM
+            variant: H4_only
+          - symbol: YM
+            variant: D_only
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install numpy
+        run: pip install numpy
+
+      - name: Run context variant
+        run: |
+          python3 backtests/test_context_variants.py "${{ matrix.variant }}" \
+            --symbol "${{ matrix.symbol }}" \
+            --start "2022-01-01T00:00:00" \
+            --end "2022-12-31T23:59:59"
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_${{ matrix.variant }}_2022
+          path: backtests/results/context_variants/${{ matrix.symbol }}_${{ matrix.variant }}_2022-01-01_2022-12-31.json
+          if-no-files-found: error
