@@ -26,8 +26,16 @@ def _trade_key(trade: dict) -> str:
 
 
 def merge_symbol_donly(result_dir: Path, symbol: str) -> dict | None:
-    """Merge D-only chunk results for a symbol and deduplicate trades."""
-    all_files = sorted(result_dir.glob(f"{symbol}_Donly_chunk*_result.json"))
+    """Merge D-only chunk results for a symbol and deduplicate trades.
+
+    Accepts both the original *_Donly_chunk*_result.json files and retry
+    outputs named *_Donly_retry*_result.json so partial reruns can be merged
+    with previously successful chunks.
+    """
+    all_files = sorted(
+        result_dir.glob(f"{symbol}_Donly_chunk*_result.json")
+        + result_dir.glob(f"{symbol}_Donly_retry*_result.json")
+    )
     if not all_files:
         return None
 
