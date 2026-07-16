@@ -1,0 +1,93 @@
+name: FVG D-Only Futures 10-Year Backtest
+
+on:
+  workflow_dispatch:
+
+jobs:
+  donly-chunk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          # ES - 4 overlapping chunks (~2.5 yrs each, 3mo overlap)
+          - symbol: ES
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-03-01T00:00:00"
+          - symbol: ES
+            chunk: 2
+            start: "2018-12-01T00:00:00"
+            end: "2022-03-01T00:00:00"
+          - symbol: ES
+            chunk: 3
+            start: "2021-12-01T00:00:00"
+            end: "2025-03-01T00:00:00"
+          - symbol: ES
+            chunk: 4
+            start: "2024-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+          # NQ
+          - symbol: NQ
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-03-01T00:00:00"
+          - symbol: NQ
+            chunk: 2
+            start: "2018-12-01T00:00:00"
+            end: "2022-03-01T00:00:00"
+          - symbol: NQ
+            chunk: 3
+            start: "2021-12-01T00:00:00"
+            end: "2025-03-01T00:00:00"
+          - symbol: NQ
+            chunk: 4
+            start: "2024-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+          # YM
+          - symbol: YM
+            chunk: 1
+            start: "2016-01-01T00:00:00"
+            end: "2019-03-01T00:00:00"
+          - symbol: YM
+            chunk: 2
+            start: "2018-12-01T00:00:00"
+            end: "2022-03-01T00:00:00"
+          - symbol: YM
+            chunk: 3
+            start: "2021-12-01T00:00:00"
+            end: "2025-03-01T00:00:00"
+          - symbol: YM
+            chunk: 4
+            start: "2024-12-01T00:00:00"
+            end: "2026-12-31T23:59:59"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install numpy
+        run: pip install numpy
+
+      - name: Run D-only backtest chunk
+        run: |
+          python3 backtests/test_context_variants.py D_only \
+            --symbol "${{ matrix.symbol }}" \
+            --start "${{ matrix.start }}" \
+            --end "${{ matrix.end }}"
+          # Rename output to a deterministic filename for the artifact upload.
+          mv backtests/results/context_variants/${{ matrix.symbol }}_D_only_*.json \
+            backtests/results/context_variants/${{ matrix.symbol }}_Donly_chunk${{ matrix.chunk }}_result.json
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.symbol }}_Donly_chunk${{ matrix.chunk }}
+          path: backtests/results/context_variants/${{ matrix.symbol }}_Donly_chunk${{ matrix.chunk }}_result.json
+          if-no-files-found: error
