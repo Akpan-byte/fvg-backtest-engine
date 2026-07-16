@@ -33,8 +33,8 @@ def merge_symbol_donly(result_dir: Path, symbol: str) -> dict | None:
     with previously successful chunks.
     """
     all_files = sorted(
-        result_dir.glob(f"{symbol}_Donly_chunk*_result.json")
-        + result_dir.glob(f"{symbol}_Donly_retry*_result.json")
+        list(result_dir.glob(f"{symbol}_Donly_chunk*_result.json"))
+        + list(result_dir.glob(f"{symbol}_Donly_retry*_result.json"))
     )
     if not all_files:
         return None

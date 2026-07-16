@@ -92,12 +92,41 @@ Tests compare three context-timeframe configurations across futures symbols.
 - Full Context significantly underperformed: only 186 trades, $735,000 profit, and a rough 8-loss streak on ES.
 - In a strong bull market, requiring Monthly/Weekly alignment appears to filter out too many valid trending setups.
 
+## 10-Year Window (2016–2026) — Full Context vs D Only
+
+Backtested the full available histories for ES, NQ, and YM.
+
+### Per Symbol
+
+| Symbol | Variant | Trades | Win Rate | Net Profit | Max Losing Streak |
+|--------|---------|--------|----------|------------|-------------------|
+| ES | Full Context (M,W,D,H4) | 549 | 70.3% | $2,940,000 | 4 |
+| ES | D Only | 621 | 69.2% | $3,230,000 | — |
+| NQ | Full Context (M,W,D,H4) | 522 | 71.6% | $2,965,000 | 4 |
+| NQ | D Only | 668 | 69.9% | $3,605,000 | — |
+| YM | Full Context (M,W,D,H4) | 564 | 69.0% | $2,920,000 | 4 |
+| YM | D Only | 555 | 69.7% | $2,950,000 | — |
+
+### Combined ES + NQ + YM (10-Year)
+
+| Variant | Total Trades | Total Profit | Avg Win Rate |
+|---------|--------------|--------------|--------------|
+| Full Context (M,W,D,H4) | 1,635 | $8,825,000 | 70.3% |
+| D Only | 1,844 | $9,785,000 | 69.6% |
+
+**Observation (10-year):**
+- D Only generated **+209 more trades** (+12.8%) and **+$960,000 more profit** (+10.9%) than Full Context.
+- NQ saw the biggest frequency gain (+146 trades, +28%).
+- Win rates were virtually identical (~69–70%).
+- Across the full decade, requiring Monthly/Weekly alignment filtered out valid setups without improving edge.
+
 ## Regime Comparison Summary
 
 | Year | Regime | Best Variant | Total Trades | Total Profit | Avg Win Rate |
 |------|--------|--------------|--------------|--------------|--------------|
 | 2022 | Bear/Volatile | H4 Only | 243 | $1,225,000 | 67.4% |
 | 2024 | Bull | D Only | 213 | $1,025,000 | 67.3% |
+| 2016–2026 | Mixed | D Only | 1,844 | $9,785,000 | 69.6% |
 
 ## Implications for Prop Firm Trading
 
